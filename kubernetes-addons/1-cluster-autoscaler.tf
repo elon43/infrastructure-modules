@@ -1,30 +1,22 @@
-data "aws_iam_openid_connect_provider" "this" {
-  arn = var.openid_provider_arn
-}
-
-data "aws_iam_policy_document" "cluster_autoscaler" {
-  statement {
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-    effect = "Allow"
-
-    condition {
-      test     = "StringEquals"
-      variable = "${replace(data.aws_iam_openid_connect_provider.this.url, "https://", "")}:sub"
-      values = ["system:serviceaccount:kube-system:cluster-autoscaler"]
-    }
-
-    principals {
-      identifiers = [data.aws_iam_openid_connect_provider.this.arn]
-      type = "Federated"
-    }
-  }
-}
-
 resource "aws_iam_role" "cluster_autoscaler" {
   count = var.enable_cluster_autoscaler ? 1 : 0
 
-  assume_role_policy = data.aws_iam_policy_document.cluster_autoscaler.json
   name = "${var.eks_name}-cluster-autoscaler"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sts:AssumeRole",
+          "sts:TagSession"
+        ]
+        Principal = {
+          Service = "pods.eks.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_iam_policy" "cluster_autoscaler" {
@@ -68,6 +60,13 @@ resource "aws_iam_role_policy_attachment" "cluster_autoscaler" {
   policy_arn = aws_iam_policy.cluster_autoscaler[0].arn
 }
 
+resource "aws_eks_pod_identity_association" "cluster_autoscaler" {
+  cluster_name    = var.eks_name
+  namespace       = "kube-system"
+  service_account = "cluster-autoscaler"
+  role_arn        = aws_iam_role.cluster_autoscaler[0].arn
+}
+
 resource "helm_release" "cluster_autoscaler" {
   count = var.enable_cluster_autoscaler ? 1 : 0
 
@@ -83,12 +82,12 @@ resource "helm_release" "cluster_autoscaler" {
   }
 
   set {
-    name  = "rbac.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = aws_iam_role.cluster_autoscaler[0].arn
-  }
-
-  set {
     name  = "autoDiscovery.clusterName"
     value = var.eks_name
   }
+
+  set {
+    name  = "awsRegion"
+    value = "us-east-1"
+  }  
 }

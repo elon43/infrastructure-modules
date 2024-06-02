@@ -23,19 +23,16 @@ variable "node_iam_policies" {
   description = "List of IAM Policies to attach to EKS-managed nodes"
   type = map(any)
   default = {
-    1 = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+    1 = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
     2 = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
     3 = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+    4 = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+    5 = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
+    6 = "arn:aws:iam::aws:policy/AutoScalingFullAccess"
   }
 }
 
 variable "node_groups" {
   description = "EKS node groups"
   type = map(any)
-}
-
-variable "enable_irsa" {
-  description = "Determines whether to create an OpenID Connect Provider to EKS"
-  type = bool
-  default = true
 }
