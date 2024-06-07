@@ -14,14 +14,17 @@ variable "enable_cluster_autoscaler" {
   default = false
 }
 
+variable "enable_loadbalancer_controller" {
+  description = "Determine whether to deploy loadbalancer controller"
+  type = bool
+  default = false
+}
 variable "cluster_autoscaler_helm_version" {
   description = "Cluster Autoscaler Helm version"
   type = string
 }
 
-/*
-variable "openid_provider_arn" {
-  description = "IAM Openid Connect Provider ARN"
+variable "aws_lbc_helm_version" {
+  description = "AWS Loadbalancer Helm version"
   type = string
 }
-*/
